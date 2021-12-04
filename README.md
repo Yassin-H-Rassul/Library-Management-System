@@ -26,12 +26,12 @@ Library Management System is an application in which we provide all the function
 
 
 ## Team
-- Yassin Hussein    
+###- Yassin Hussein    
 responsible for Building and Designing the project.
 
-- Amanj ShekhMohammed      
+###- Amanj ShekhMohammed      
 responsible for Building and Designing the project.
 
-- Lana Talal    
+###- Lana Talal    
 responsible for Building and Designing the project.
 
