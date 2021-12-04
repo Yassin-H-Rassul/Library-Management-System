@@ -2,17 +2,13 @@ package com.LibraryManagementSystem.View;
 
 import com.LibraryManagementSystem.Controller.Librarian;
 
-
-import java.io.IOException;
 import java.util.Scanner;
 
 public class LibrarianView {
-
-//    public static ArrayList<Librarian> listOfLibrarians = new ArrayList<>();
     public Scanner sc = new Scanner(System.in);
     Librarian librarian;
 
-    public void login(Librarian currentLibrarian) throws IOException, ClassNotFoundException {
+    public void login(Librarian currentLibrarian){
         librarian = currentLibrarian;
         boolean quit = false;
         int choice;
@@ -30,10 +26,11 @@ public class LibrarianView {
                 case 5 -> showAvailableBooks();
                 case 6 -> showIssuedBooks();
                 case 7 -> showReturnedBooks();
-                case 8 -> quit = true;
+                case 8 -> {
+                    System.out.println("Bye... Good Luck.");
+                    quit = true;
+                }
             }
-
-
         }
     }
 
@@ -52,7 +49,7 @@ public class LibrarianView {
                 """); // done
     }
 
-    public void issueBook() throws IOException, ClassNotFoundException {
+    public void issueBook() {
         System.out.println("enter the id of the book: ");
         int bookId = sc.nextInt();
         sc.nextLine();
@@ -75,7 +72,7 @@ public class LibrarianView {
 
     }
 
-    public void returnBook() throws IOException, ClassNotFoundException {
+    public void returnBook() {
         System.out.println("enter the id of the student: ");
         int studentId = sc.nextInt();
         sc.nextLine();
@@ -96,7 +93,7 @@ public class LibrarianView {
         librarian.viewReturnedBooks();
     }
 
-    public void addNewBook() throws IOException, ClassNotFoundException {
+    public void addNewBook() {
         System.out.println("please enter the id of the book: ");
         int bookId= sc.nextInt();
         sc.nextLine();
@@ -111,7 +108,7 @@ public class LibrarianView {
         librarian.addNewBook(bookId,bookName,authorName,bookQuantity);
     }
 
-    public void removeBook() throws IOException, ClassNotFoundException {
+    public void removeBook() {
         System.out.println("please enter the id of the book: ");
         int bookId= sc.nextInt();
         sc.nextLine();

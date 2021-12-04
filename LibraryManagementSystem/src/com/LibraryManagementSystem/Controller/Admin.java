@@ -65,4 +65,8 @@ public class Admin implements AdminTasks{
         }
         return -1;
     }
+
+    public ArrayList<Librarian> getLibrarianArrayList() {
+        return librarianArrayList;
+    }
 }

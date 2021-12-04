@@ -1,33 +1,38 @@
 package com.LibraryManagementSystem.Controller;
 
-import com.LibraryManagementSystem.Model.Book;
-import com.LibraryManagementSystem.Model.Packet;
-import com.LibraryManagementSystem.Model.Student;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ClientController {
 
     private Socket socket = null;
-    private ObjectOutputStream objectOut;
-    private ObjectInputStream objectIn;
+    private PrintWriter out;
+    private BufferedReader in;
+    private ObjectMapper mapper = new ObjectMapper();
+    private String JSONin;
+    private String JSONout;
+    private String message;
+    private String JSONinContent;
 
     public void startConnection() {
 
         int PORT_NUMBER = 4000;
         try {
             socket = new Socket("localhost", PORT_NUMBER);
-            objectIn = new ObjectInputStream(socket.getInputStream());  //
-            objectOut = new ObjectOutputStream(socket.getOutputStream());
-        } catch (UnknownHostException e){
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        } catch (UnknownHostException e) {
             System.out.println("host is not known.");
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -36,63 +41,203 @@ public class ClientController {
     }
 
     public void endConnection() throws IOException {
-        Packet packet = new Packet(3, null);
-        objectOut.close();
-        objectIn.close();
+        out.close();
+        in.close();
         socket.close();
     }
 
-    public boolean setData(ArrayList<?> arrayList) throws IOException, ClassNotFoundException {
-//        startConnection();
-        int message = 0;
-        // check the type of the packet
-        if (arrayList != null) {
-            if (arrayList.size() > 0 && arrayList.get(0) instanceof Student)
-                message = 103;
 
-            else if (arrayList.size() > 0 && arrayList.get(0) instanceof Book) {
-                message = 100;
+    public boolean searchBookId(int id) {
+        message = "01";
+        JSONout = message + " " + id;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return !JSONin.contains("00");
+    }
 
-            } else if (arrayList.size() > 0 && arrayList.get(0) instanceof Map<?, ?>) {
-                if (((Map<?, ?>) arrayList.get(0)).containsKey("borrowerStudent"))
-                    message = 101;
-                else
-                    message = 102;
-            }
+
+    public void saveBook(int bookId, String bookName, String bookAuthor, int quantity) {
+        Map<String, String> bookDetails = new LinkedHashMap<>();
+        bookDetails.put("bookID", String.valueOf(bookId));
+        bookDetails.put("bookName", bookName);
+        bookDetails.put("bookAuthor", bookAuthor);
+        bookDetails.put("bookQuantity", String.valueOf(quantity));
+
+        String bookAsJSON = null;
+        try {
+            bookAsJSON = mapper.writeValueAsString(bookDetails);
+        } catch (JsonProcessingException e) {
+            System.out.println("could not convert an object to json. **saveBook()");
+            e.printStackTrace();
         }
 
-
-        Packet<ArrayList<?>> packet = new Packet<>(message, arrayList);
-        objectOut.writeObject(packet);
-        objectOut.flush();
-        Packet response = (Packet) objectIn.readObject();
-        int responseMessage = response.getMessage();
-        if (responseMessage == 1) {
-            System.out.println("setting Data to file succeeded.");
-            return true;
-        } else {
-            System.out.println("setting data to file failed.");
-            return false;
+        message = "02";
+        JSONout = message + " " + bookAsJSON;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // we check the first two characters for the response message
+        } catch (IOException e) {
+            System.out.println("IOException: in client savebook() " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
 
-    public boolean getAllData() throws IOException, ClassNotFoundException {
-//        startConnection();
-        // packets will be received in order of (available books, issued books, returned books, students).
-        Packet packetToBeSent = new Packet(2, null);
-        objectOut.writeObject(packetToBeSent);
-        Packet<ArrayList<Book>> availableBooksPacket = (Packet<ArrayList<Book>>) objectIn.readObject();
-        Packet<ArrayList<Map<String, Object>>> issuedBooksPacket = (Packet<ArrayList<Map<String, Object>>>) objectIn.readObject();
-        Packet<ArrayList<Map<String, Object>>> returnedBooksPacket = (Packet<ArrayList<Map<String, Object>>>) objectIn.readObject();
-        Packet<ArrayList<Student>> studentsPacket = (Packet<ArrayList<Student>>) objectIn.readObject();
-        //after receiving all data from file, we set them to our collections.
-        Library.setAvailableBooks(availableBooksPacket.getContent(), false);
-        Library.setIssuedBooks(issuedBooksPacket.getContent(), false);
-        Library.setReturnedBooks(returnedBooksPacket.getContent(), false);
-        Library.setStudents(studentsPacket.getContent(), false);
-//        System.out.println("all data fetched successfully.");
-        return true;
+    public boolean removeBook(int bookId) {
+        message = "03";
+        JSONout = message + " " + bookId;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // we check the first two characters for the response message
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        if (JSONin.contains("01")) {
+            System.out.println("book removed.");
+            return true;
+        } else {
+            System.out.println("book is not available in the database, removing book failed.");
+            return false;
+        }
+
+    }
+
+    public boolean bookAndAuthorExists(String bookName, String authorName) {
+        message = "04";
+        JSONout = message + " " + bookName + "," + authorName;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // 00 or 01
+        } catch (IOException e) {
+            System.out.println("IOException in Client bookAndAuthorNameExists" + e.getMessage());
+        }
+
+
+        // checking:
+        return !JSONin.contains("00");
+    }
+
+    public void saveStudent(int studentId, String studentName, String mobileNo) {
+        LinkedHashMap<String, String> studentDetails = new LinkedHashMap<>();
+        studentDetails.put("studentID", String.valueOf(studentId));
+        studentDetails.put("studentName", studentName);
+        studentDetails.put("studentMobileNo", mobileNo);
+
+        String studentAsJSON = null;
+        try {
+            studentAsJSON = mapper.writeValueAsString(studentDetails);
+        } catch (JsonProcessingException e) {
+            System.out.println("could not convert student to JSON. **saveStudent()");
+            e.printStackTrace();
+        }
+
+        String message = "05";
+        JSONout = message + " " + studentAsJSON;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // first two characters
+        } catch (IOException e) {
+            System.out.println("IOException at Client SaveStudent()");
+            e.printStackTrace();
+        }
+
+    }
+
+
+    public boolean searchForStudent(int studentId) {
+        // check if the student exists or not in the students table.
+        message = "06";
+        JSONout = message + " " + studentId;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // whether the student exists or not.
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return JSONin.contains("01");
+    }
+
+    public boolean searchForStudentWhoIssued(int studentId, int bookId) {
+        // check if the student and issued book exists or not in the issuedBooks table.
+        message = "07";
+        JSONout = message + " " + studentId + "," + bookId;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // whether the student exists or not.
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return JSONin.contains("01");
+    }
+
+    public String[] getAvailableBooks() {
+        // return all books in availableBooks table,
+        message = "08";
+        JSONout = message;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // message + books.
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        JSONinContent = JSONin.substring(3);
+        String[] availableBooks = JSONinContent.split("/");
+        return availableBooks;
+    }
+
+
+    public String[] getIssuedBooks() {
+        // return all books and students in issuedBooks table,
+        message = "09";
+        return getStudentsWithIssuedBook(message);
+    }
+
+    public String[] getReturnedBooks() {
+        // return all books in returnedBooks table,
+        message = "10";
+        return getStudentsWithIssuedBook(message);
+    }
+
+    private String[] getStudentsWithIssuedBook(String message) {
+        JSONout = message;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); //   [student + book]/[student + book].
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        JSONinContent = JSONin.substring(3);
+        String[] studentsWithIssuedBook = JSONinContent.split("/"); // each row will be separated.
+        return studentsWithIssuedBook;
+    }
+
+
+    public void saveIssuedBook(int studentId, int bookId) {
+        String message = "11";
+        JSONout = message + " " + studentId + "," + bookId;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // first two characters
+        } catch (IOException e) {
+            System.out.println("IOException at Client SaveStudent()");
+            e.printStackTrace();
+        }
+    }
+
+    public void saveReturnedBook(int studentId, int bookId) {
+        String message = "12";
+        JSONout = message + " " + studentId + "," + bookId;
+        out.println(JSONout);
+        try {
+            JSONin = in.readLine(); // first two characters
+        } catch (IOException e) {
+            System.out.println("IOException at Client SaveStudent()");
+            e.printStackTrace();
+        }
     }
 }

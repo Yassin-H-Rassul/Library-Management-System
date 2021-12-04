@@ -1,17 +1,26 @@
 package com.LibraryManagementSystem.View;
 
+import com.LibraryManagementSystem.Controller.Admin;
 import com.LibraryManagementSystem.Controller.Librarian;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class AdminView {
-
-    public ArrayList<Librarian> listOfLibrarians = new ArrayList<>();
+    Admin admin = new Admin("admin", "admin");
     public Scanner sc = new Scanner(System.in);
 
-    public void login() throws IOException, ClassNotFoundException {
+    public void login() {
+        System.out.println("Admin:");
+        System.out.println("Enter the username: ");
+        String username = sc.next();
+        sc.nextLine();
+        System.out.println("Enter the password: ");
+        String password = sc.next();
+        sc.nextLine();
+        if (!username.equals("admin") || !password.equals("admin")) {
+            System.out.println("username and password are incorrect, failed to log in as admin.");
+            return;
+        }
         System.out.println("Successfully Logged in as an admin!");
         printAdminInstructions();
         boolean quit = false;
@@ -28,7 +37,7 @@ public class AdminView {
             }
         }
         LibrarianView librarianUserInterface = new LibrarianView();
-        Librarian currentLibrarian = listOfLibrarians.get(0);
+        Librarian currentLibrarian = admin.getLibrarianArrayList().get(0);
         librarianUserInterface.login(currentLibrarian);
     }
 
@@ -40,9 +49,7 @@ public class AdminView {
         System.out.println("Enter the password: ");
         String password = sc.next();
         sc.nextLine();
-        Librarian librarian = new Librarian(username,password);
-        listOfLibrarians.add(librarian);
-        System.out.println("librarian added!");
+        admin.addNewLibrarian(username, password);
     }
 
     public void printAdminInstructions(){
@@ -62,31 +69,10 @@ public class AdminView {
         // if it is available, remove it from the list.
         System.out.println("enter the username of the librarian: ");
         String username = sc.next();
-        Librarian librarianFound = findLibrarian(username);
-        if(librarianFound !=null){
-            listOfLibrarians.remove(librarianFound);
-            System.out.println("librarian successfully deleted.");
-        }
-        else{
-            System.out.println("there is no librarian with this name, removing failed.");
-        }
+        admin.deleteLibrarian(username);
     }
 
-    public Librarian findLibrarian(String username){
-        for (var librarian:
-                listOfLibrarians) {
-            String currentLibrarianUsername = librarian.getLibrarianUsername();
-            if(currentLibrarianUsername.equals(username)){
-                return librarian;
-            }
-        }
-        return null;
-    }
-
-    public void viewLibrarians(){
-        for (var librarian:
-                listOfLibrarians) {
-            System.out.println(librarian);
-        }
+    public void viewLibrarians() {
+        admin.viewLibrarians();
     }
 }
